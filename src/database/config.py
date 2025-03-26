@@ -10,7 +10,7 @@ load_dotenv()
 # Database URL will be loaded from environment variable
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/kortex"
+    "mysql+pymysql://newuser:newpassword@localhost/kortex"
 )
 
 # Create SQLAlchemy engine

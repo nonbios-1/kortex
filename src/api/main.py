@@ -1,5 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List, Optional
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from datetime import datetime
+
+# Import from local modules with absolute imports
+from database.config import SessionLocal
+from database.models import PromptWorkflow as DBPromptWorkflow
 
 app = FastAPI(
     title="Kortex API",
@@ -15,33 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/")
-async def root():
-    return {
-        "name": "Kortex API",
-        "version": "0.1.0",
-        "status": "operational"
-    }
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "components": {
-            "api": "ok",
-            "database": "not_configured"
-        }
-    }
-
-from typing import List, Optional
-from pydantic import BaseModel
-from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
-from datetime import datetime
-
-from ..database.config import SessionLocal
-from ..database.models import PromptWorkflow, PromptEvaluation
 
 # Pydantic models for request/response
 class PromptWorkflowBase(BaseModel):
@@ -69,10 +50,28 @@ def get_db():
     finally:
         db.close()
 
+@app.get("/")
+async def root():
+    return {
+        "name": "Kortex API",
+        "version": "0.1.0",
+        "status": "operational"
+    }
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "components": {
+            "api": "ok",
+            "database": "connected"
+        }
+    }
+
 # CRUD endpoints for PromptWorkflow
 @app.post("/workflows/", response_model=PromptWorkflow)
 def create_workflow(workflow: PromptWorkflowCreate, db: Session = Depends(get_db)):
-    db_workflow = PromptWorkflow(
+    db_workflow = DBPromptWorkflow(
         name=workflow.name,
         description=workflow.description,
         prompt_template=workflow.prompt_template,
@@ -85,19 +84,19 @@ def create_workflow(workflow: PromptWorkflowCreate, db: Session = Depends(get_db
 
 @app.get("/workflows/", response_model=List[PromptWorkflow])
 def list_workflows(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    workflows = db.query(PromptWorkflow).offset(skip).limit(limit).all()
+    workflows = db.query(DBPromptWorkflow).offset(skip).limit(limit).all()
     return workflows
 
 @app.get("/workflows/{workflow_id}", response_model=PromptWorkflow)
 def get_workflow(workflow_id: int, db: Session = Depends(get_db)):
-    workflow = db.query(PromptWorkflow).filter(PromptWorkflow.id == workflow_id).first()
+    workflow = db.query(DBPromptWorkflow).filter(DBPromptWorkflow.id == workflow_id).first()
     if workflow is None:
         raise HTTPException(status_code=404, detail="Workflow not found")
     return workflow
 
 @app.put("/workflows/{workflow_id}", response_model=PromptWorkflow)
 def update_workflow(workflow_id: int, workflow: PromptWorkflowCreate, db: Session = Depends(get_db)):
-    db_workflow = db.query(PromptWorkflow).filter(PromptWorkflow.id == workflow_id).first()
+    db_workflow = db.query(DBPromptWorkflow).filter(DBPromptWorkflow.id == workflow_id).first()
     if db_workflow is None:
         raise HTTPException(status_code=404, detail="Workflow not found")
     
@@ -110,7 +109,7 @@ def update_workflow(workflow_id: int, workflow: PromptWorkflowCreate, db: Sessio
 
 @app.delete("/workflows/{workflow_id}")
 def delete_workflow(workflow_id: int, db: Session = Depends(get_db)):
-    workflow = db.query(PromptWorkflow).filter(PromptWorkflow.id == workflow_id).first()
+    workflow = db.query(DBPromptWorkflow).filter(DBPromptWorkflow.id == workflow_id).first()
     if workflow is None:
         raise HTTPException(status_code=404, detail="Workflow not found")
     

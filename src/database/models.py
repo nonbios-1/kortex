@@ -7,9 +7,9 @@ class PromptWorkflow(Base):
     __tablename__ = "prompt_workflows"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(String)
-    prompt_template = Column(String, nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(String(1000))
+    prompt_template = Column(String(4000), nullable=False)
     parameters = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -35,8 +35,8 @@ class TestSuite(Base):
     __tablename__ = "test_suites"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(String)
+    name = Column(String(255), nullable=False)
+    description = Column(String(1000))
     workflow_id = Column(Integer, ForeignKey("prompt_workflows.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -52,7 +52,7 @@ class TestCase(Base):
     test_suite_id = Column(Integer, ForeignKey("test_suites.id"))
     input_data = Column(JSON, nullable=False)
     expected_output = Column(JSON)
-    metadata = Column(JSON)
+    test_metadata = Column(JSON)  # Renamed from metadata to test_metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -67,7 +67,7 @@ class TestResult(Base):
     test_case_id = Column(Integer, ForeignKey("test_cases.id"))
     actual_output = Column(JSON)
     is_passed = Column(Boolean, nullable=False)
-    error_message = Column(String)
+    error_message = Column(String(1000))
     execution_time = Column(Float)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
